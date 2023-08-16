@@ -1,17 +1,13 @@
 const express = require('express');
-const path = require('path');
-const mongoose = require('mongoose')
 const handlebars = require('express-handlebars');
 const socketServer = require('./utils/io');
-const filePath = path.join(__dirname, 'products.json');
+const mongoose = require('mongoose');
+const { Server } = require('socket.io')
 
-// Implementación de enrutadores
-const productsRouter = require('./routers/product');
-const cartsRouter = require('./routers/carts');
-const viewsRouterFn = require('./routers/viewsRouters');
-const productRouter = require('./routers/product');
 
-const app = express();
+const multer = require('multer');
+
+const app = express()
 const MONGODB_CONNECT = `mongodb+srv://analauravillarruel:Elitelaura74@cluster0.xw7lmtu.mongodb.net/ecommerceretryWrites=true&w=majority`
 mongoose.connect(MONGODB_CONNECT)
   .then(() => console.log('Conexión exitosa a la base de datos'))
@@ -20,7 +16,6 @@ mongoose.connect(MONGODB_CONNECT)
       console.log('Error al conectarse a la base de datos', error.message)
     }
   })
-
 
 // Middleware para el manejo de JSON y datos enviados por formularios
 app.use(express.json());
@@ -31,29 +26,46 @@ app.engine('handlebars', handlebars.engine())
 app.set('views', __dirname + '/views')
 app.set('view engine', 'handlebars')
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/img');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+
+const uploader = multer({ storage: storage });
+
 // Seteo de forma estática la carpeta public
 app.use(express.static(__dirname + '/public'));
+app.set('views', __dirname + '/views');
+
 
 // Crear el servidor HTTP
-const PORT = 8080;
-const httpServer = app.listen(PORT, () =>
-  console.log(`Servidor corriendo en el ${PORT}`)
-);
-
+const httpServer = app.listen(8080, () => {
+  console.log(`Servidor express escuchando en el puerto 8080`);
+});
 // Crear el objeto `io` para la comunicación en tiempo real
-const io = socketServer(httpServer);
-// Crear las rutas de vistas y pasar el objeto `io` a `viewsRouterFn`
-const viewsRouter = viewsRouterFn(io);
+const io = new Server(httpServer)
+socketServer(io)
+
+// Implementación de enrutadores
+const productsRouter = require('./routers/product');
+const cartsRouter = require('./routers/carts');
+const viewsRouter = require('./routers/viewsRouters');
 
 // Rutas base de enrutadores
-app.use('/api/products', productRouter);
+app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/', viewsRouter);
 
 // Ruta de health check
 app.get('/healthCheck', (req, res) => {
-  res.json({
-    status: 'running',
-    date: new Date(),
-  });
+    res.json({
+        status: 'running',
+        date: new Date(),
+    });
 });
+
+module.exports = io
