@@ -1,13 +1,17 @@
 const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const handlebars = require('express-handlebars');
-const socketServer = require('./utils/io');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io')
-
-
+const cookieParser = require('cookie-parser')
 const multer = require('multer');
+const passport = require('passport')
+const flash =require('connect-flash')
 
-const app = express()
+const initializePassport = require('./Config/passport.config');
+ 
+
 const MONGODB_CONNECT = `mongodb+srv://analauravillarruel:Elitelaura74@cluster0.xw7lmtu.mongodb.net/ecommerceretryWrites=true&w=majority`
 mongoose.connect(MONGODB_CONNECT)
   .then(() => console.log('Conexión exitosa a la base de datos'))
@@ -17,9 +21,38 @@ mongoose.connect(MONGODB_CONNECT)
     }
   })
 
+const app = express()
+
+app.use(cookieParser('secretkey'))
+
+app.use(session({
+
+  store: MongoStore.create({
+    mongoUrl:MONGODB_CONNECT,
+    ttl:15
+
+  }),
+  secret: 'secretSession',
+  resave: true,
+  saveUninitialized: true
+}));
+
+
+initializePassport(passport);
+
+app.use(passport.initialize());
+app.use(passport.session()); 
+
+
+
+
 // Middleware para el manejo de JSON y datos enviados por formularios
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(flash())
+// Pasa el objeto Passport como argumento
+
 
 // Configuración handlebars
 app.engine('handlebars', handlebars.engine())
@@ -28,7 +61,7 @@ app.set('view engine', 'handlebars')
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/img');
+    cb(null, 'uploader/img');
   },
   filename: function (req, file, cb) {
     cb(null, file.originalname);
@@ -47,15 +80,17 @@ const httpServer = app.listen(8080, () => {
   console.log(`Servidor express escuchando en el puerto 8080`);
 });
 // Crear el objeto `io` para la comunicación en tiempo real
-const io = new Server(httpServer)
-socketServer(io)
+const io = new Server(httpServer);
 
 // Implementación de enrutadores
+
+const sessionRouter = require('./routers/session'); // Asegúrate de que la ruta sea correcta
 const productsRouter = require('./routers/product');
 const cartsRouter = require('./routers/carts');
 const viewsRouter = require('./routers/viewsRouters');
 
 // Rutas base de enrutadores
+app.use('/api/sessions',sessionRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/', viewsRouter);

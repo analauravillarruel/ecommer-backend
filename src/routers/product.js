@@ -75,7 +75,7 @@ productsRouter.get('/:pid', async (req, res) => {
 
 productsRouter.post('/', uploader.array('thumbnails', 5), async (req, res) => {
     const newProduct = req.body;
-    const thumbnails = req.files.map(file => file.path);
+    const thumbnails = req.files ? req.files.map(file => file.path) : [];
     try {
         await productManager.addProduct({ ...newProduct, thumbnails });
         return res.status(201).json({ status: 'success', message: 'Producto agregado exitosamente' });
@@ -83,6 +83,21 @@ productsRouter.post('/', uploader.array('thumbnails', 5), async (req, res) => {
         return res.status(500).json({ error: 'Error al agregar el producto', message: error.message });
     }
 });
+
+productsRouter.post('/', async (req, res) => {
+    try {
+      // Extrae los datos del formulario enviado por el usuario
+      const formData = req.body; // Ajusta esto según la estructura de tu formulario
+  
+      // Agrega el producto a la base de datos utilizando el productManager
+      await productManager.addProduct(formData);
+  // Redirige a la vista de "All Products" o a otra ubicación
+      res.redirect('/products');
+    } catch (error) {
+      // Manejo de errores
+      // ...
+    }
+  });
 
 productsRouter.put('/:pid', async (req, res) => {
     const pid = req.params.pid;
