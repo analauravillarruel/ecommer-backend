@@ -22,7 +22,7 @@ sessionRouter.get('/', (req, res) => {
 sessionRouter.post('/register',async (req,res) => {
   const body = req.body
   body.password = createHash(body.password)
-  console.log({body});
+  console.log(body.password);
  const user = await userModel.create(body)
 
 //  if(req.query.client === 'view'){
@@ -32,6 +32,7 @@ sessionRouter.post('/register',async (req,res) => {
  return res.redirect('/login')
 
 //  return res. status(201).json(user)
+
  })
 
 sessionRouter.post('/login',async(req,res)=>{
@@ -42,10 +43,11 @@ sessionRouter.post('/login',async(req,res)=>{
     })
   }
   if(!isValidPassword(req.body.password,user.password)){
+    console.log(req.body.password,user.password);
     return res.status(401).json({
       error:'El dato es incorrecto'
     })
-
+    
   }
   user = user.toObject()
 

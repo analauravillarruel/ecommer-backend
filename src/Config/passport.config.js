@@ -11,7 +11,7 @@ const initializePassport = () => {
       async (req, username, password, done) => {
           try {
               const user = await userModel.findOne({ email: username })
-
+            
               if (user) {
                   console.log('Usuario ya existe')
                   return done(null, false)
