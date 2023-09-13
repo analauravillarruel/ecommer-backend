@@ -1,37 +1,31 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 
-const userSchema = new mongoose.Schema({
+const { Schema, model } = require('mongoose');
 
-        name: String,
-        email: String,
-        password: String,
-        isAdmin: Boolean, // Campo para almacenar el estado de administrador
-    });
-
-// Método para encriptar la contraseña antes de guardarla en la base de datos
-userSchema.pre('save', function(next) {
-    const user = this;
-
-    if (!user.isModified('password')) return next();
-
-    bcrypt.genSalt(10, (err, salt) => {
-        if (err) return next(err);
-
-        bcrypt.hash(user.password, salt, (err, hash) => {
-            if (err) return next(err);
-
-            user.password = hash;
-            next();
-        });
-    });
+const userSchema = Schema({
+  name: String,
+  lastname: String,
+  username: {
+    type: String,
+    unique: true
+  },
+  email: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false // Por defecto, un usuario no es administrador
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-// Método para verificar la contraseña
-userSchema.methods.validPassword = function(password) {
-    return bcrypt.compareSync(password, this.password);
-};
-
-const UserModel = mongoose.model('User', userSchema);
-
-module.exports = UserModel;
+module.exports = model('users', userSchema);

@@ -11,4 +11,4 @@ const isValidPassword = (password, hashedPassword) => {
 module.exports ={
   createHash,
   isValidPassword
-}
+};

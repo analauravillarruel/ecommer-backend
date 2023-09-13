@@ -1,137 +1,74 @@
 const { Router } = require('express');
 const ProductManagerMongo = require('../Dao/productManagerMongo');
+const io = require('../utils/io'); // Asegúrate de que la ruta sea correcta
 const CartsManagerMongo = require('../Dao/cartsManagerMongo');
-const UserModel = require('../Dao/models/userModel'); 
-const productManager = new ProductManagerMongo();
+const userModel = require('../Dao/models/userModel'); 
 const cartManager = new CartsManagerMongo(); 
 const viewsRouter = new Router();
 
-const sessionMiddleware = (req, res, next) => {
+const productManager = new ProductManagerMongo(io); // Asegúrate de que 'io' esté disponible
+
+// Middleware de sesión
+function sessionMiddleware(req, res, next) {
     if (req.session.user) {
-      return res.redirect('/profile')
+        console.log('req.session.user');
+        return res.redirect('/profile');
     }
-  
-    return next()
-  }
-  
-  viewsRouter.get('/register', sessionMiddleware, (req, res) => {
-    return res.render('register')
-  })
-  
-  viewsRouter.get('/login', sessionMiddleware, (req, res) => {
-    return res.render('login')
-  });
-  
-  
-  viewsRouter.get('/recovery-password', sessionMiddleware, (req, res) => {
-    return res.render('recovery-password')
-  })
-  
-  viewsRouter.get('/profile', (req, res, next) => {
+    return next();
+}
+viewsRouter.get('/github', passport.authenticate('github'));
+viewsRouter.get('/github-callback', passport.authenticate('github', {
+    successRedirect: '/profile', // Redirige a la página de perfil después de la autorización exitosa
+    failureRedirect: '/login', // Redirige a la página de inicio de sesión en caso de error
+}));
+
+
+viewsRouter.get('/register', sessionMiddleware, (req, res) => {
+    console.log('register');
+    return res.render('register');
+});
+
+viewsRouter.get('/login', (req, res) => {
+    console.log('login');
+    return res.render('login');
+});
+
+viewsRouter.get('/api/sessions/recovery-password', sessionMiddleware, (req, res) => {
+    return res.render('recovery-password');
+});
+
+
+viewsRouter.get('/profile', (req, res, next) => {
     if (!req.session.user) {
-      return res.redirect('/login')
+        return res.redirect('/login');
     }
-  
-    return next()
-  }, (req, res) => {
-    const user = req.session.user
-    return res.render('profile', { user })
-  })
+    const user = req.session.user;
 
-// Definimos la ruta /products solo una vez
-viewsRouter.get('/products', async (req, res) => {
-    try {
-        const products = await productManager.getProducts();
-        res.render('products/allProducts', { products, cartId: 'your_cart_id' });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los productos', message: error.message });
-    }
+    // Renderizar la página de perfil estándar para todos los usuarios
+    return res.render('profile', { user });
 });
 
-viewsRouter.get('/chat', async (req, res) => {
-    try {
-        //en esta instancia no se pasan los mensajes para evitar que se puedan visualizar antes de identificarse
-        return res.render('chat', { title: 'Chat', style: 'styles.css' });
-    } catch (error) {
-        console.log(error)
+viewsRouter.get('/allproducts', async (req, res, next) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
     }
-});
 
-viewsRouter.get('/error', (req, res) => {
-    const errorMessage = req.query.message || 'Ha ocurrido un error';
-    res.render('error', { title: 'Error', errorMessage: errorMessage });
-});
+    // Verificar si el usuario es un administrador
+    if (req.session.user.isAdmin) {
+        // Si es un administrador, mostrar la página "allproducts"
+        const io = req.app.get('io');
+        const productManager = new ProductManagerMongo(io);
 
-viewsRouter.get('/products/:cartId/:productId', async (req, res) => {
-    try {
-        const cartId = req.params.cartId;
-        const productId = req.params.productId;
-
-        // Primero, verifica si el carrito con el cartId existe.
-        const cart = await cartManager.getCartById(cartId);
-
-        if (!cart) {
-            return res.redirect('/error?message=Carrito no encontrado');
+        try {
+            // Obtener la lista de productos utilizando productManager
+            const products = await productManager.getProducts();
+            return res.render('products/allproducts', { products, user: req.session.user });
+        } catch (error) {
+            console.error('Error al obtener los productos:', error);
+            return res.redirect('/error?message=Error al obtener los productos');
         }
-
-        // Una vez que tienes el carrito, busca el producto por su productId.
-        const product = cart.products.find(p => p.product === productId);
-
-        if (!product) {
-            return res.redirect('/error?message=Producto no encontrado en el carrito');
-        }
-
-        // Ahora, tienes el carrito y el producto. Puedes mostrarlos en la vista.
-        res.render('products/product Details', { product, cartId });
-    } catch (error) {
-        res.redirect('/error?message=Error al obtener los detalles del producto');
+    } else {
+        // Si no es un administrador, redirigirlo a su página de perfil
+        return res.redirect('/profile');
     }
 });
-
-
-viewsRouter.get('/carts/:cartId', async (req, res) => {
-    try {
-        const cartId = req.params.cartId;
-        const cart = await cartManager.getCartById(cartId);
-        res.render('carts/cartDetails', { cart });
-    } catch (error) {
-        res.redirect('/error?message=Error al obtener los detalles del carrito');
-    }
-});
-
-// Ruta para agregar un producto al carrito
-viewsRouter.post('/add-to-cart/:cartId/:productId', async (req, res) => {
-    try {
-        const cartId = req.params.cartId;
-        const productId = req.params.productId;
-
-        // Lógica para agregar el producto al carrito
-        await cartManager.addProductToCart(cartId, productId);
-
-        // Redirige de vuelta a la página de productos
-        res.redirect('/products');
-    } catch (error) {
-        res.redirect('/error?message=Error al agregar el producto al carrito');
-    }
-});
-viewsRouter.get('/products/:productId', async (req, res) => {
-    try {
-        const productId = req.params.productId;
-        const product = await productManager.getProductById(productId);
-        res.render('products/productDetails', { product });
-
-    } catch (error) {
-        res.redirect('/error?message=Error al obtener los detalles del producto');
-    }
-});
-// Ruta para manejar errores
-viewsRouter.get('/error', (req, res) => {
-    const errorMessage = req.query.message || 'Ha ocurrido un error';
-    res.render('error', { title: 'Error', errorMessage: errorMessage });
-});
-
-
-
-
-
-module.exports = viewsRouter;
