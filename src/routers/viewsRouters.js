@@ -22,7 +22,6 @@ viewsRouter.get('/github-callback', passport.authenticate('github', {
     failureRedirect: '/login', // Redirige a la página de inicio de sesión en caso de error
 }));
 
-
 viewsRouter.get('/register', sessionMiddleware, (req, res) => {
     console.log('register');
     return res.render('register');
@@ -36,7 +35,6 @@ viewsRouter.get('/login', (req, res) => {
 viewsRouter.get('/api/sessions/recovery-password', sessionMiddleware, (req, res) => {
     return res.render('recovery-password');
 });
-
 
 viewsRouter.get('/profile', (req, res, next) => {
     if (!req.session.user) {
@@ -72,3 +70,6 @@ viewsRouter.get('/allproducts', async (req, res, next) => {
         return res.redirect('/profile');
     }
 });
+
+
+module.exports = productsViewsRouter

@@ -1,101 +1,113 @@
 const passport = require('passport');
-const GitHubStrategy = require('passport-github2');
-const passportLocal = require ('passport-local');
-const userModel = require('../Dao/models/userModel')
-const { createHash,isValidPassword} = require('../utils/passwordHash')
+const local = require('passport-local');
+const passportJWT = require('passport-jwt')
+const userModel = require('../models/userModel');
+const { createHash, isValidPassword } = require('../utils/utils');
+const cartModel = require('../models/cartModel');
 
-const LocalStrategy = passportLocal.Strategy
+const LocalStrategy = local.Strategy;
+
+
+const JWTStrategy = passportJWT.Strategy
+const extractJWT = passportJWT.ExtractJwt
+
+const cookieExtractor = (req) => {
+    console.log(req.cookies)
+    return req.cookies && req.cookies.authToken
+//     // return req.headers && req.headers['authorization'] && req.headers['authorization'].replace('Bearer ', '')
+}
 
 const initializePassport = () => {
-    // Estrategia de GitHub
-    passport.use('github', new GitHubStrategy({
-        clientID: 'Iv1.d8eacfbf5a5310a4',
-        clientSecret: 'SHA256:KuELgQVqJGyXSEfmGVz5tiN0xqSxT1nnxp1++yvAzMI=',
-        callbackURL: 'http://localhost:8080/api/sessions/github-callback'
-    }, async (accessToken, refreshToken, profile, done) => {
-        try {
-            const user = await userModel.findOne({ email: profile._json.email });
+    passport.use('jwt', new JWTStrategy({
+        jwtFromRequest: extractJWT.fromExtractors([cookieExtractor]),
+        secretOrKey: 'jwtsecret'
+    }, (jwtPayload, done) => {
+        console.log({ jwtPayload })
+        done(null, jwtPayload.user)
+    }))
 
-            if (user) {
-                console.log('Usuario ya existe');
-                return done(null, user);
-            }
-
-            const newUser = await userModel.create({
-                username: profile._json.login,
-                email: profile._json.email
-            });
-
-            return done(null, newUser);
-        } catch (e) {
-            return done(e);
-        }
-    }));
-
-    // Estrategia de registro local
     passport.use('register', new LocalStrategy(
-        { passReqToCallback: true, usernameField: 'email' },
-        async (req, username, password, done) => {
-            try {
-                const user = await userModel.findOne({ email: username });
+        { passReqToCallback: true, usernameField: 'email' }, async (req, username, password, done) => {
 
-                if (user) {
-                    console.log('Usuario ya existe');
+            try {
+
+                const existe = await userModel.findOne({ email: username });
+                // console.log()
+                if (existe) {
+                    console.log('ya existe');
                     return done(null, false);
                 }
 
-                const body = req.body;
-                body.password = createHash(body.password);
-                console.log({ body });
+                const newUser = {
+                    name: req.body.name,
+                    email: username,
+                    password: createHash(password),
+                }
 
-                const newUser = await userModel.create(body);
 
-                return done(null, newUser);
-            } catch (e) {
-                return done(e);
+                const usuario = await userModel.create(newUser);
+
+                return done(null, usuario);
+
+
+
+            } catch (error) {
+
+                return done(error);
+
             }
+
         }
     ));
 
-    // Estrategia de inicio de sesión local
     passport.use('login', new LocalStrategy(
-        { usernameField: 'email' },
-        async (email, password, done) => {
+        { usernameField: 'email' }, async (username, password, done) => {
+
             try {
-                let user = await userModel.findOne({ email: email });
 
-                if (!user) {
-                    console.log('El usuario no existe en el sistema');
-                    return done(null, false, { message: 'El usuario no existe en el sistema' });
+                const existe = await userModel.findOne({ email: username }).populate('cart');
+                console.log(existe.cart)
+                if (!existe) {
+                    console.log('no existe');
+                    return done(null, false, {
+                        message: 'no existe el usuario'
+                    });
                 }
 
-                if (!isValidPassword(password, user.password)) {
-                    return done(null, false, { message: 'Datos incorrectos' });
+                if (!isValidPassword(password, existe.password)) {
+                    return done(null, false, {
+                        message: 'credenciales incorrectas'
+                    });
                 }
 
-                user = user.toObject();
+                if (!existe.cart) {
+                    const newCart = await cartModel.create({
+                        name: 'default'
+                    })
 
-                delete user.password;
+                    await userModel.updateOne({ _id: existe._id }, { cart: newCart._id })
+                }
+                return done(null, existe);
 
-                done(null, user);
-            } catch (e) {
-                return done(e);
+            } catch (error) {
+
             }
+
         }
-    ));
+    ))
+
 
     passport.serializeUser((user, done) => {
-        console.log({ user });
-        console.log('serializeUser');
-        done(null, user._id);
+        return done(null, user._id);
     });
 
     passport.deserializeUser(async (id, done) => {
-        console.log('deserializeUser');
-        const user = await userModel.findOne({ _id: id });
-        done(null, user);
+        const user = await userModel.findById(id).populate('cart');
+
+        return done(null, user);
     });
-};
+}
+
 
 module.exports = initializePassport;
 

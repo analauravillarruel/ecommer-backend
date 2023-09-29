@@ -106,6 +106,30 @@ class ProductManagerMongo {
             throw error;
         }
     }
+    
+    async getProductDetails(productId) {
+        try {
+            const productDetails = await this.model.findById(productId);
+
+            if (!productDetails) {
+                throw new Error('Producto no encontrado en la base de datos');
+            }
+
+            return {
+                id: productDetails._id,
+                title: productDetails.title,
+                description: productDetails.description,
+                code: productDetails.code,
+                price: productDetails.price,
+                status: productDetails.status,
+                stock: productDetails.stock,
+                category: productDetails.category,
+                thumbnails: productDetails.thumbnails,
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
 
     async deleteProduct(id) {
         try {

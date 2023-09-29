@@ -1,11 +1,15 @@
 const fs = require("fs");
-const generateId = require('../../utils/generateId');
+const generateId = require('../../utils/io');
 
 class ProductManager {
     constructor(path, io) {
         this.products = [];
         this.path = path;
         this.io = io;
+    }
+    async getAllProducts(){
+        const products = await this.model.find()
+        return products.map(p=>p.toObject())
     }
 
     async getProducts() {
@@ -22,7 +26,6 @@ class ProductManager {
             console.log("Error al leer o parsear el archivo", { error });
             this.products = [];
             return this.products;
-            console.log(products);
         }
     }
 
@@ -61,11 +64,9 @@ class ProductManager {
                 category: data.category,
                 thumbnails: data.thumbnails ?? []
             }
-            
 
             this.products.push(newProduct);
-            console.log(newProduct);
-            // await fs.promises.writeFile(this.path, JSON.stringify(this.products, null, 2));
+            await fs.promises.writeFile(this.path, JSON.stringify(this.products, null, 2));
             this.io.emit('newProduct', JSON.stringify(newProduct))
 
         } catch (error) {
@@ -131,4 +132,4 @@ class ProductManager {
     }
 }
 
-module.exports = ProductManager;
+module.exports = ProductManager

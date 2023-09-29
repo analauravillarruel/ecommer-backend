@@ -1,118 +1,58 @@
-const express = require('express');
+const { Router } = require('express');
+const router = new Router();
 const passport = require('passport');
-const userModel = require('../Dao/models/userModel');
-const{createHash,isValidPassword}= require('../utils/passwordHash');
+const { generateToken } = require('../utils/jwt');
 
+router.post('/register', passport.authenticate('register', { failureRedirect: '/register' }), async (req, res) => {
+    
+    return res.redirect('/api/sessions/current');
 
-const sessionRouter = express.Router();
-
-sessionRouter.get('/github', passport.authenticate('github', { scope: ['user:email'] }), async (req, res) => {
-
-})
-
-sessionRouter.get('/github-callback', passport.authenticate('github', { failureRedirect: '/login'}), async (req, res) => {
-  return res.json(req.user)
-})
-
-sessionRouter.post('/register', async (req, res) => {
-  try {
-    const { name, lastname, email, password } = req.body;
-    if (!name || !lastname || !email || !password) {
-      console.log('req.body');
-      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-    }
-
-    const user = await userModel.findOne({ email });
-
-    if (user) {
-      console.log('user');
-      return res.status(401).json({ error: 'El usuario ya existe' });
-    }
-
-    const hashedPassword = createHash(password);
-
-    const newUser = {
-      name,
-      lastname,
-      email,
-      password: hashedPassword,
-      username: email,
-      isAdmin: req.body.isAdmin || false,
-    };
-
-
-    await userModel.create(newUser);
-
-    return res.redirect('/login');
-  } catch (error) {
-    console.error('Error al registrar usuario:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
 });
 
-sessionRouter.get('/failregister', (req, res) => {
-  return res.json({
-    error: 'Error al registrarse'
-  });
-});
-
-sessionRouter.get('/faillogin', (req, res) => {
-  return res.json({
-    error: 'Error al iniciar sesión'
-  });
-});
-
-sessionRouter.post('/login', 
-  passport.authenticate('login', { failureRedirect: '/faillogin' }), 
-  async (req, res) => {
-    try {
-      let user = await userModel.findOne({ email: req.body.email });
-
-      if (!user) {
-        console.log({user});
-        return res.status(401).json({
-          error: 'El usuario no existe en el sistema'
-        });
-      }
-
-      if (!isValidPassword(req.body.password, user.password)) {
-        return res.status(401).json({
-          error: 'Datos incorrectos'
-        });
-      }
-
-      user = user.toObject();
-
-      delete user.password;
-
-      req.session.user = user;
-
-      if (user.isAdmin) {
-        return res.redirect('/products');
-      } else {
-        return res.redirect('/profile');
-      }
-    } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      return res.status(500).json({ error: 'Error interno del servidor' });
-    }
-});
-
-sessionRouter.post('/recovery-password', async (req, res) => {
-
-  let user = await userModel.findOne({ email: req.body.email })
-
-  if (!user) {
-    return res.status(401).json({
-      error: 'El usuario no existe en el sistema'
+router.post('/login', passport.authenticate('login', { failureRedirect: '/login', failureFlash: true }), async (req, res) => {
+    const token = generateToken({
+        name: req.user.name,
+        email: req.user.email,
+        role: 'USER'
     })
-  }
 
-  const newPassword = createHash(req.body.password)
-  await userModel.updateOne({ email: user.email }, { password: newPassword })
+     console.log({ token })
+    
+    //  return res.send(req.user)
+    
+     return res.cookie('authToken', token, {
+         maxAge: 60* 60* 1000
+    }).redirect('/api/sessions/current');
+});
 
-  return res.redirect('/login')
+const passportCall = (strategy) => {
+    return (req, res, next) => {
+      passport.authenticate(strategy, (err, user, info) => {
+        if (err) {
+          return next(err)
+        }
+  
+        if (!user) {
+          return res.status(401).json({
+            error: info.messages ? info.messages : info.toString()
+           })
+         }
+        req.user = user
+  
+         return next()
+       })(req, res, next)
+     }
+   }
 
+router.get('/current', passportCall('jwt'), (req, res) => {
+    return res.json({
+        user: req.user,
+        session: req.session
+    })
 })
 
-module.exports = sessionRouter;
+
+
+
+
+module.exports = router;

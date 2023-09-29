@@ -68,6 +68,58 @@ class CartManagerMongo {
             throw error
         }
     }
+    
+    async updateCartProducts(cartId, newProducts) {
+        try {
+            const cart = await this.model.findById(cartId);
+
+            if (!cart) {
+                throw new Error('No se encuentra el carrito');
+            }
+
+            cart.products = newProducts;
+
+            await cart.save();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async removeProductFromCart(cartId, productId) {
+        try {
+            const cart = await this.model.findById(cartId);
+            if (!cart) {
+                throw new Error('No se encuentra el carrito');
+            }
+
+            const productIndex = cart.products.findIndex(
+                p => p.product.toString() === productId
+            );
+
+            if (productIndex === -1) {
+                throw new Error('Producto no encontrado en el carrito');
+            }
+
+            cart.products.splice(productIndex, 1);
+            await cart.save();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async clearCart(cartId) {
+        try {
+            const cart = await this.model.findById(cartId);
+            if (!cart) {
+                throw new Error('No se encuentra el carrito');
+            }
+
+            cart.products = [];
+            await cart.save();
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = CartManagerMongo
