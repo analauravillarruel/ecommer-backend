@@ -1,4 +1,6 @@
+
 const express = require('express');
+const dotenv =require('dotenv');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const handlebars = require('express-handlebars');
@@ -8,29 +10,36 @@ const cookieParser = require('cookie-parser')
 const multer = require('multer');
 const passport = require('passport')
 const flash =require('connect-flash')
+const UserRouter = require('./routers/userRouter');
+const userRouter= new UserRouter()
+
 
 const initializePassport = require('./Config/passport.config');
  
+dotenv.config()
+console.log(process.env)
 
-const MONGODB_CONNECT = `mongodb+srv://analauravillarruel:Elitelaura74@cluster0.xw7lmtu.mongodb.net/ecommerceretryWrites=true&w=majority`
-mongoose.connect(MONGODB_CONNECT)
-  .then(() => console.log('Conexión exitosa a la base de datos'))
-  .catch((error) => {
-    if (error) {
-      console.log('Error al conectarse a la base de datos', error.message)
-    }
-  })
+const CONNECTION_STRING = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`
+console.log(`conectandose a ${CONNECTION_STRING}`)
+// mongoose.connect(MONGODB_CONNECT)
+//   .then(() => console.log('Conexión exitosa a la base de datos'))
+//   .catch((error) => {
+//     if (error) {
+//       console.log('Error al conectarse a la base de datos', error.message)
+//     }
+//   })
 
 const app = express()
+
 
 app.use(cookieParser('secretkey'))
 
 app.use(session({
 
-  store: MongoStore.create({
-    mongoUrl:MONGODB_CONNECT,
+  // store: MongoStore.create({
+  //   mongoUrl:MONGODB_CONNECT,
 
-  }),
+  // }),
   secret: 'secretSession',
   resave: true,
   saveUninitialized: true
@@ -88,11 +97,13 @@ const productsRouter = require('./routers/product');
 const cartsRouter = require('./routers/carts');
 const viewsRouter = require('./routers/viewsRouters');
 
+
 // Rutas base de enrutadores
 app.use('/api/sessions',sessionRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/', viewsRouter);
+app.use('/users', userRouter.getRouter());
 
 // Ruta de health check
 app.get('/healthCheck', (req, res) => {
