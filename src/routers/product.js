@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const io = require("../server"); 
+const io = require("socket.io"); 
 const { Router } = require('express');
 
 const ProductManagerMongo = require('../Dao/productManagerMongo');

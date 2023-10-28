@@ -1,4 +1,4 @@
-
+const {Command} 
 const express = require('express');
 const dotenv =require('dotenv');
 const session = require('express-session');
@@ -10,24 +10,22 @@ const cookieParser = require('cookie-parser')
 const multer = require('multer');
 const passport = require('passport')
 const flash =require('connect-flash')
-const UserRouter = require('./routers/userRouter');
+const UserRouter = require('./src/routers/userRouter');
 const userRouter= new UserRouter()
+const configFn = require('./src/Config/config');
 
 
-const initializePassport = require('./Config/passport.config');
+const initializePassport = require('./src/Config/passport.config');
  
-dotenv.config()
-console.log(process.env)
+dotenv.config();
+const config = configFn();
 
-const CONNECTION_STRING = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`
-console.log(`conectandose a ${CONNECTION_STRING}`)
-// mongoose.connect(MONGODB_CONNECT)
-//   .then(() => console.log('Conexión exitosa a la base de datos'))
-//   .catch((error) => {
-//     if (error) {
-//       console.log('Error al conectarse a la base de datos', error.message)
-//     }
-//   })
+// Construcción de la Cadena de Conexión a MongoDB
+const CONNECTION_STRING = `mongodb+srv://${config.db_user}:${config.db_password}@${config.db_host}/${config.db_name}?retryWrites=true&w=majority`;
+
+
+// Impresión de la Cadena de Conexión
+console.log(`Conectandose a ${CONNECTION_STRING}`);
 
 const app = express()
 
@@ -92,10 +90,10 @@ const io = new Server(httpServer);
 
 // Implementación de enrutadores
 
-const sessionRouter = require('./routers/session'); // Asegúrate de que la ruta sea correcta
-const productsRouter = require('./routers/product');
-const cartsRouter = require('./routers/carts');
-const viewsRouter = require('./routers/viewsRouters');
+const sessionRouter = require('./src/routers/session'); // Asegúrate de que la ruta sea correcta
+const productsRouter = require('./src/routers/product');
+const cartsRouter = require('./src/routers/carts');
+const viewsRouter = require('./src/routers/viewsRouters');
 
 
 // Rutas base de enrutadores
