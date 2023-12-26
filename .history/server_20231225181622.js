@@ -54,7 +54,7 @@ dotenv.config({
 
 const settings = config()
 
-const dbConnection = DB.getConnection(process.env)
+const dbConnection = DB.getConnection(process.env.)
 
 DB.getConnection(settings)
 

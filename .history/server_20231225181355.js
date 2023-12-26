@@ -53,8 +53,7 @@ dotenv.config({
 // console.log(process.env)
 
 const settings = config()
-
-const dbConnection = DB.getConnection(process.env)
+const dbConnection = DB.getConnection(process.env.MONGODB_URL || settings.MONGODB_URL);
 
 DB.getConnection(settings)
 
