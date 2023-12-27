@@ -4,7 +4,7 @@ class MongoSingleton {
   static instance
 
   constructor (settings) {
-    const MONGODB_CONNECT = `mongodb+srv://${process.env.db_user}:${process.env.db_password}@${process.env.db_host}/${process.env.db_name}?retryWrites=true&w=majority`
+    `mongodb+srv://${process.env.db_user}:${process.env.db_password}@${process.env.db_host}/${process.env.db_name}?retryWrites=true&w=majority`
 
     mongoose.connect(MONGODB_CONNECT)
       .then(async r => {
