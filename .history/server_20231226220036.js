@@ -54,7 +54,7 @@ dotenv.config({
 
 const settings = config()
 
-mongoose.set('strictQuery',true);
+
 
 const dbConnection = DB.getConnection(process.env)
 
