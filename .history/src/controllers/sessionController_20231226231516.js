@@ -3,7 +3,7 @@ const passport = require('passport');
 const sessionMiddleware = require('../middleware/sessionMiddleware');
 const { createHash, passwordValidation } = require('../utils/passwordHash');
 const jwt = require('jsonwebtoken');
-const UserDTO = require('../DTO/userDto');
+const UserDTO = require('../');
 const UserService = require('../services/userService');
 
 const userService = new UserService();
