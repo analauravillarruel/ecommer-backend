@@ -124,7 +124,7 @@ const sessionRouter = require('./src/routers/session'); // Asegúrate de que la 
 const productsRouter = require('./src/routers/product');
 const cartsRouter = require('./src/routers/carts');
 const viewsRouter = require('./src/routers/viewsRouters');
-const userRouter = require('./src/routers/userRouter');
+const userRouter = require('./src/routers/')
 
 
 // Rutas base de enrutadores
