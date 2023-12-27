@@ -1,5 +1,5 @@
 const http = require('http');
-const ioInit = require('./src/utils/io');
+
 const express = require('express');
 const session = require('express-session');
 const {Command} = require ('commander');

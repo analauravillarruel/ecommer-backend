@@ -1,5 +1,4 @@
 const http = require('http');
-const ioInit = require('./src/utils/io');
 const express = require('express');
 const session = require('express-session');
 const {Command} = require ('commander');
@@ -117,7 +116,6 @@ app.set('views', path.join(__dirname, 'src', 'views'));
 
 // Crear el servidor HTTP
 const httpServer = http.createServer(app);
-const io = ioInit(httpServer);
 const PORT = process.env.PORT || 8080;
 
 httpServer.listen(PORT, () => {
