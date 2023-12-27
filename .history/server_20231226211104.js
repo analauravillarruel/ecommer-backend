@@ -128,7 +128,7 @@ const viewsRouter = require('./src/routers/viewsRouters');
 
 // Rutas base de enrutadores
 app.use('/api/sessions',sessionRouter.router);
-app.use('/api/users', userRouter);
+app.use('/api/userRouters',)
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/', viewsRouter);

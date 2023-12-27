@@ -55,9 +55,7 @@ dotenv.config({
 const settings = config()
 
 const dbConnection = DB.getConnection(process.env)
-
-
-
+`mongodb+srv://melgarejofatimacarolina:8g3ZKFx4JtMWDIRS@cluster0.rhfgipr.mongodb.net/ecommerceretryWrites=true&w=majority`
 DB.getConnection(settings)
 
 const app = express()
@@ -128,7 +126,6 @@ const viewsRouter = require('./src/routers/viewsRouters');
 
 // Rutas base de enrutadores
 app.use('/api/sessions',sessionRouter.router);
-app.use('/api/users', userRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 app.use('/', viewsRouter);
