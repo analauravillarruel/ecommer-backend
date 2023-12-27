@@ -117,10 +117,10 @@ app.set('views', path.join(__dirname, 'src', 'views'));
 const PORT = process.env.PORT || 8080;
 
 httpServer.listen(PORT, () => {
-  console.log`(Servidor express escuchando en el puerto ${PORT})`;
+  console.log(Servidor express escuchando en el puerto ${PORT});
 });
 
-module.exports=io;
+module.exports =io;
 
 // Implementación de enrutadores
 
